@@ -67,3 +67,10 @@ class SudokuBoard(tk.Frame):
                     row_data.append(int(val))
             data.append(row_data)
         return data
+    
+    def clear_board(self):
+        for row in range(9):
+            for col in range(9):
+                # 使用 Tkinter Entry 內建的 delete 方法
+                # 0 代表從第一個字元開始，tk.END 代表到最後一個字元
+                self.cells[row][col].delete(0,tk.END)

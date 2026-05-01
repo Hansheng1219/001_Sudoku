@@ -59,4 +59,8 @@ class SudokuApp(tk.Tk):
     def on_clear_click(self):
         """點擊清空按鈕時要執行的動作"""
         print("User clear the board")
+        self.board.clear_board()
+        
         # 這裡未來會呼叫 board 裡面的 clear() 方法
+
+    
