@@ -1,6 +1,16 @@
 import tkinter as tk
 from gui.widgets import SudokuCell, SudokuBoard
 from gui.app import SudokuApp
+import logging
+
+# 1. 設定日誌基礎配置 (只會執行一次)
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s | %(levelname)-8s | %(message)s',
+    datefmt='%H:%M:%S',
+    filename='sudoku_debug.log',
+    filemode='w'
+)
 
 def test_cell():
     root = tk.Tk()
