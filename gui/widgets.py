@@ -28,28 +28,47 @@ class SudokuCell(tk.Entry):
     
 class SudokuBoard(tk.Frame):
     def __init__(self, master, **kwargs):
-        # 繼承 Frame 的特性，並加上一點邊框
-        super().__init__(master, bd=2, relief="solid", **kwargs)
+        super().__init__(
+            master,
+            highlightbackground="black",
+            highlightthickness=2,
+            **kwargs)
 
         # 建立一個二維陣列來儲存 81 個 SudokuCell 物件
-        self.cells = []
+        self.cells = [[None for _ in range(9)] for _ in range(9)]
 
-        for row in  range(9):
-            row_cell = []
-            for col in range(9):
-                # 1. 實例化單一格子
-                cell = SudokuCell(self, row = row, col = col)
+        # --- 四層迴圈邏輯 ---
+        # b_row, b_col 代表 3x3 個「大區塊」的座標 (0~2)
+        for b_row in range(3):
+            for b_col in range(3):
 
-                # 2. 視覺排版：製造 3x3 的區塊感
-                # 如果是第 2 或第 5 個索引 (
-                pad_x = (1,3) if col in (2,5) else (1,1)
-                pad_y = (1,3) if row in (2,5) else (1,1)
+                # 1. 建立一個 3x3 的大區塊容器
+                # highlightbackground="black" 設定外框顏色
+                # highlightthickness=2 設定外框粗細 (這就是你要的粗線)
 
-                # 3. 使用 grid 排版系統將格子放上底板
-                cell.grid(row = row, column=col, padx=pad_x, pady=pad_y)
+                block_frame = tk.Frame(
+                    self, 
+                    highlightbackground="black",
+                    highlightthickness=2,
+                    bd=0
+                )
+                block_frame.grid(row=b_row, column=b_col)
 
-                row_cell.append(cell)
-            self.cells.append(row_cell)
+                # row, col 代表該區塊內「小格子」的相對座標 (0~2)
+                for r in range(3):
+                    for c in range(3):
+                        # 2. 計算這格在 9x9 盤面上的「絕對座標」
+                        actual_row = b_row * 3 + r
+                        actula_col = b_col * 3 + c
+
+                        # 3. 建立格子，注意！master 要設為 block_frame 而非 self
+                        cell = SudokuCell(block_frame, actual_row, actula_col)
+                        cell.grid(row=r, column=c)
+
+                        # 4. 依然存入 9x9 陣列中，確保 get/set_board_data 功能不受影響
+                        self.cells[actual_row][actula_col] = cell
+
+            # self.cells.append(row_cell)
     def get_board_data(self):
         """
         封裝方法：讀取介面上所有的數字，回傳給未來的邏輯層使用。
@@ -74,3 +93,12 @@ class SudokuBoard(tk.Frame):
                 # 使用 Tkinter Entry 內建的 delete 方法
                 # 0 代表從第一個字元開始，tk.END 代表到最後一個字元
                 self.cells[row][col].delete(0,tk.END)
+    
+    def set_board_data(self, data):
+        """將二維陣列的資料填入介面中的格子中"""
+        for r in range(9):
+            for c in range(9):
+                self.cells[r][c].delete(0, tk.END)
+                val = data[r][c]
+                if val != 0:
+                    self.cells[r][c].insert(0, str(val))

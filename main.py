@@ -1,6 +1,7 @@
 import tkinter as tk
 from gui.widgets import SudokuCell, SudokuBoard
 from gui.app import SudokuApp
+
 import logging
 
 # 1. 設定日誌基礎配置 (只會執行一次)

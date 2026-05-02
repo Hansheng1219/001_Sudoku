@@ -16,7 +16,10 @@ class SudokuModel:
     def is_valid(self, row, col, num):
         """檢查將數字 num 放入 (row, col) 是否合法"""
         self.logger.debug(f"cheching rule: trying to put the number {num} in the point({row},{col})")
-
+        if any(self.board_data[r][col] == num for r in range(9)):
+            return False
+        if any(self.board_data[row][c] == num for c in range(9)):
+            return False
         # 這裡未來會寫入檢查 行、列、九宮格 的邏輯
         # ...
 
