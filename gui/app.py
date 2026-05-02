@@ -3,10 +3,12 @@
 
 import tkinter as tk
 from gui.widgets import SudokuBoard
+import logging
 
 class SudokuApp(tk.Tk):
     def __init__(self,):
         super().__init__()
+        self.logger = logging.getLogger("SudokuApp")
 
         # 設定主視窗的屬性
         self.title("Solvd Sodoku automatically")
@@ -49,16 +51,16 @@ class SudokuApp(tk.Tk):
 
     def on_solve_click(self):
         """點擊解題按鈕時要執行的動作"""
-        print("User press, solving")
+        self.logger.info("User press, solving")
         # 呼叫盤面交出資料
 
         current_data = self.board.get_board_data()
         for row in current_data:
-            print(row)
+            self.logger.info(row)
 
     def on_clear_click(self):
         """點擊清空按鈕時要執行的動作"""
-        print("User clear the board")
+        self.logger.info("User clear the board")
         self.board.clear_board()
         
         # 這裡未來會呼叫 board 裡面的 clear() 方法
