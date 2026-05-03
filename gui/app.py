@@ -3,9 +3,13 @@
 
 import tkinter as tk
 from gui.widgets import SudokuBoard
+
+import json
+import os
 import logging
 
 class SudokuApp(tk.Tk):
+    SAVE_FILE = "last_board.json"
     def __init__(self,):
         super().__init__()
         self.logger = logging.getLogger("SudokuApp")
@@ -20,7 +24,29 @@ class SudokuApp(tk.Tk):
 
         # 2. 建立控制按鈕區塊
         self._create_controls()
+        self.load_last_puzzle()
 
+    def load_last_puzzle(self):
+        """啟動嘗試從檔案讀取上次的題目"""
+        if os.path.exists(self.SAVE_FILE):
+            try:
+                with open(self.SAVE_FILE, "r") as f:
+                    data = json.load(f)
+                    self.board.set_board_data(data)
+                self.logger.info("success to load the last data")
+            except:
+                self.logger.error("fail to load the data")
+
+    def save_current_puzzle(self):
+        """將目前盤面資料存入檔案"""
+        data = self.board.get_board_data()
+        try:
+            with open(self.SAVE_FILE, "w") as f:
+                json.dump(data, f)
+            self.logger.info("already saved the board data")
+        except Exception as e:
+            self.logger.error(f"fail to save: {e}")
+    
     def _create_controls(self):
         #封裝方法：專門用來產生下方的按鈕群組
 
@@ -52,17 +78,40 @@ class SudokuApp(tk.Tk):
     def on_solve_click(self):
         """點擊解題按鈕時要執行的動作"""
         self.logger.info("User press, solving")
+        self.save_current_puzzle() # <--- 點擊 Solving 時自動存檔
         # 呼叫盤面交出資料
 
         current_data = self.board.get_board_data()
-        for row in current_data:
-            self.logger.info(row)
+        from Core.model import SudokuModel
+        model = SudokuModel(current_data)
+
+        self.logger.info("---Starting to validate the current board---")
+        is_all_pass = True
+        for r in range(9):
+            for c in range(9):
+                val = current_data[r][c]
+
+                if val != 0:
+                    model.board_data[r][c] = 0
+                    is_ok = model.is_valid(r, c, val)
+                    self.logger.info(f"{val} in ({r},{c}) is ok")
+                    model.board_data[r][c] = val
+
+                    if not is_ok:
+                        self.logger.error(f"{val} in ({r}:{c}) is not ok")
+                        is_all_pass == False
+                else:
+                    self.logger.info(f"({r}:{c}) is None")
+        if is_all_pass:
+            self.logger.info(f"---all number are ok---")
+        else:
+            self.logger.warning(f"---test fail: the number on the board is not ok---")
 
     def on_clear_click(self):
         """點擊清空按鈕時要執行的動作"""
         self.logger.info("User clear the board")
         self.board.clear_board()
         
-        # 這裡未來會呼叫 board 裡面的 clear() 方法
-
-    
+        if os.path.exists(self.SAVE_FILE):
+            os.remove(self.SAVE_FILE)
+            self.logger.info("already clear the data")
