@@ -16,12 +16,21 @@ class SudokuModel:
     def is_valid(self, row, col, num):
         """檢查將數字 num 放入 (row, col) 是否合法"""
         self.logger.debug(f"cheching rule: trying to put the number {num} in the point({row},{col})")
+        
+
         if any(self.board_data[r][col] == num for r in range(9)):
+            self.logger.error("find the same number in the column")
             return False
         if any(self.board_data[row][c] == num for c in range(9)):
+            self.logger.error("find the same number in the row")
             return False
-        # 這裡未來會寫入檢查 行、列、九宮格 的邏輯
-        # ...
+        b_row, b_col = (row // 3) * 3, (col // 3) * 3
+        if any(self.board_data[r][c] == num 
+                for r in range(b_row, b_row + 3) 
+                for c in range(b_col, b_col + 3)):
+            self.logger.error(f"Found the same number {num} in the 3x3 area starting at ({b_row}, {b_col})")
+            return False
+        
 
         return True
     
