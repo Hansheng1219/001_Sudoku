@@ -3,6 +3,7 @@
 # 演算法解題：負責執行「回溯法 (Backtracking)」演算法，自動推算出正確的數獨解答。
 
 import logging
+from itertools import product
 
 
 
@@ -15,9 +16,6 @@ class SudokuModel:
 
     def is_valid(self, row, col, num):
         """檢查將數字 num 放入 (row, col) 是否合法"""
-        self.logger.debug(f"cheching rule: trying to put the number {num} in the point({row},{col})")
-        
-
         if any(self.board_data[r][col] == num for r in range(9)):
             self.logger.error("find the same number in the column")
             return False
@@ -31,29 +29,59 @@ class SudokuModel:
             self.logger.error(f"Found the same number {num} in the 3x3 area starting at ({b_row}, {b_col})")
             return False
         
-
         return True
+        
+    def init_pencil_marks(self):
+        """將候選數字放入筆記中"""
+        self.logger.info(f"---start to mark the numbers---")
+        self.pencil_marks = [[set() for _ in range(9)] for _ in range(9)]
+        FULL_SET = {1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+        for r, c in product(range(9), range(9)):
+            if self.board_data[r][c] == 0:
+                # 取得同行、同列、同九宮格「已經存在」的數字集合 (假設您有寫這些輔助函數)
+                used_nums = self.get_used_num(r,c)
+                
+                # 使用集合的差集 (-) 運算：全集合 減去 已使用的數字 = 剩下的候選數
+                self.pencil_marks[r][c] = FULL_SET - used_nums
+                self.logger.info(f"{self.pencil_marks[r][c]} mark in ({r + 1},{c + 1})")
+        self.logger.info(f"---End of mark the numbers---")
+
+    def get_used_num(self, row, col):
+        used_row_nums = {num for num in self.board_data[row][:] if num != 0}
+        used_col_nums = {self.board_data[r][col] for r in range(9) if self.board_data[r][col] != 0}
+        b_row, b_col = (row // 3) * 3, (col // 3) * 3
+        used_box_nums = {
+            self.board_data[r][c] 
+            for r in range(b_row, b_row + 3) 
+            for c in range(b_col, b_col + 3) 
+            if self.board_data[r][c] != 0
+        }
+        used_nums = used_row_nums | used_col_nums | used_box_nums
+
+        return used_nums
+    
+    def fill_naked_singles(self):
+        updates = []
+
+        for r in range(9):
+            for c in range(9):
+                if len(self.pencil_marks[r][c]) == 1:
+                    num = next(iter(self.pencil_marks[r][c]))
+                    self.board_data[r][c] = num
+                    updates.append((r, c, num))
+                    self.pencil_marks[r][c].remove
+        
+        return updates
+                
+
     
     def solve(self):
-        """回溯法解題核心"""
-        self.logger.info('start the backtracking solving algorithm')
-        
+        self.logger.info('start to solve the sodoku')
+        self.init_pencil_marks()
+        updates = self.fill_naked_singles()
         # 這裡未來會寫入遞迴邏輯
         # 假設我們在某一步遇到死胡同要退回：
         # self.logger.debug(f"⚠️ 遇到死胡同，進行回溯 (Backtrack) 從座標 ({row}, {col}) 退回")
 
-        return True
-    
-if __name__ == "__main__":
-    # 1. 建立一個假的 9x9 數獨盤面（用 0 代表空白格子）
-    # 這裡我們用簡單的串列推導式生成一個 9x9 的全 0 陣列
-    dummy_board = [[0 for _ in range(9)] for _ in range(9)]
-
-    # 2. 實例化大腦模型
-    model = SudokuModel(dummy_board)
-
-    # 3. 呼叫方法來觸發 Logging 紀錄
-    model.is_valid(0,5,5)
-    model.solve()
-
-    print("Inside testing already done, please check the log file")
+        return updates

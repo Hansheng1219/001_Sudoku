@@ -94,18 +94,24 @@ class SudokuApp(tk.Tk):
                 if val != 0:
                     model.board_data[r][c] = 0
                     is_ok = model.is_valid(r, c, val)
-                    self.logger.info(f"{val} in ({r},{c}) is ok")
                     model.board_data[r][c] = val
 
                     if not is_ok:
                         self.logger.error(f"{val} in ({r}:{c}) is not ok")
                         is_all_pass == False
-                else:
-                    self.logger.info(f"({r}:{c}) is None")
         if is_all_pass:
             self.logger.info(f"---all number are ok---")
         else:
             self.logger.warning(f"---test fail: the number on the board is not ok---")
+
+        updates = model.solve()
+        if updates:
+            for r, c, num in updates:
+                target_cell = self.board.cells[r][c]
+                
+                target_cell.config(fg="blue")
+                target_cell.delete(0, 'end')
+                target_cell.insert(0, str(num))
 
     def on_clear_click(self):
         """點擊清空按鈕時要執行的動作"""
