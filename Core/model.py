@@ -64,24 +64,36 @@ class SudokuModel:
     def fill_naked_singles(self):
         updates = []
 
-        for r in range(9):
-            for c in range(9):
-                if len(self.pencil_marks[r][c]) == 1:
-                    num = next(iter(self.pencil_marks[r][c]))
-                    self.board_data[r][c] = num
-                    updates.append((r, c, num))
-                    self.pencil_marks[r][c].remove
+        for r, c in product(range(9), range(9)):
+            if len(self.pencil_marks[r][c]) == 1:
+                num = self.pencil_marks[r][c].pop()
+                self.board_data[r][c] = num
+                updates.append((r, c, num))
         
         return updates
                 
-
+    # def eliminate_naked_subset(self, subsize: int) -> None:
+        
     
     def solve(self):
         self.logger.info('start to solve the sodoku')
-        self.init_pencil_marks()
-        updates = self.fill_naked_singles()
+        all_updates = []
+        while True:
+            self.init_pencil_marks()
+            updates = self.fill_naked_singles()
+            if not updates:
+                self.logger.info("Logic phase ended. No new updates")
+                break
+            all_updates.extend(updates)
+
+        # for r, c in product(range(9), range(9)):
+        #     if self.pencil_marks[r][c]:
+        #         self.logger.info(f"{(r + 1,c + 1)} have {self.pencil_marks[r][c]}")
+
+        
+
         # 這裡未來會寫入遞迴邏輯
         # 假設我們在某一步遇到死胡同要退回：
         # self.logger.debug(f"⚠️ 遇到死胡同，進行回溯 (Backtrack) 從座標 ({row}, {col}) 退回")
 
-        return updates
+        return all_updates

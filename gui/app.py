@@ -112,6 +112,7 @@ class SudokuApp(tk.Tk):
                 target_cell.config(fg="blue")
                 target_cell.delete(0, 'end')
                 target_cell.insert(0, str(num))
+        
 
     def on_clear_click(self):
         """點擊清空按鈕時要執行的動作"""
