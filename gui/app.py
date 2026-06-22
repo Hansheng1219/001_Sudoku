@@ -8,9 +8,13 @@ import json
 import os
 import logging
 
+
 class SudokuApp(tk.Tk):
     SAVE_FILE = "last_board.json"
-    def __init__(self,):
+
+    def __init__(
+        self,
+    ):
         super().__init__()
         self.logger = logging.getLogger("SudokuApp")
 
@@ -46,9 +50,9 @@ class SudokuApp(tk.Tk):
             self.logger.info("already saved the board data")
         except Exception as e:
             self.logger.error(f"fail to save: {e}")
-    
+
     def _create_controls(self):
-        #封裝方法：專門用來產生下方的按鈕群組
+        # 封裝方法：專門用來產生下方的按鈕群組
 
         # 建立一個 Frame 來把按鈕橫向排好
         control_frame = tk.Frame(self)
@@ -60,7 +64,7 @@ class SudokuApp(tk.Tk):
             text="Solving",
             font=("Arial", 14),
             bg="lightblue",
-            command=self.on_solve_click
+            command=self.on_solve_click,
         )
         self.btn_solve.grid(row=0, column=0, padx=10)
 
@@ -69,7 +73,7 @@ class SudokuApp(tk.Tk):
             control_frame,
             text="clear the borard",
             font=("Arial", 14),
-            command=self.on_clear_click
+            command=self.on_clear_click,
         )
         self.btn_clear.grid(row=0, column=1, padx=10)
 
@@ -78,11 +82,12 @@ class SudokuApp(tk.Tk):
     def on_solve_click(self):
         """點擊解題按鈕時要執行的動作"""
         self.logger.info("User press, solving")
-        self.save_current_puzzle() # <--- 點擊 Solving 時自動存檔
+        self.save_current_puzzle()  # <--- 點擊 Solving 時自動存檔
         # 呼叫盤面交出資料
 
         current_data = self.board.get_board_data()
         from Core.model import SudokuModel
+
         model = SudokuModel(current_data)
 
         self.logger.info("---Starting to validate the current board---")
@@ -94,24 +99,30 @@ class SudokuApp(tk.Tk):
                 if val != 0:
                     model.board_data[r][c] = 0
                     is_ok = model.is_valid(r, c, val)
-                    self.logger.info(f"{val} in ({r},{c}) is ok")
                     model.board_data[r][c] = val
 
                     if not is_ok:
                         self.logger.error(f"{val} in ({r}:{c}) is not ok")
                         is_all_pass == False
-                else:
-                    self.logger.info(f"({r}:{c}) is None")
         if is_all_pass:
             self.logger.info(f"---all number are ok---")
         else:
             self.logger.warning(f"---test fail: the number on the board is not ok---")
 
+        updates = model.solve()
+        if updates:
+            for r, c, num in updates:
+                target_cell = self.board.cells[r][c]
+
+                target_cell.config(fg="blue")
+                target_cell.delete(0, "end")
+                target_cell.insert(0, str(num))
+
     def on_clear_click(self):
         """點擊清空按鈕時要執行的動作"""
         self.logger.info("User clear the board")
         self.board.clear_board()
-        
+
         if os.path.exists(self.SAVE_FILE):
             os.remove(self.SAVE_FILE)
             self.logger.info("already clear the data")
