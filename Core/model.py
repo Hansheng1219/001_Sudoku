@@ -5,6 +5,7 @@
 import logging
 from itertools import product
 import copy
+from itertools import combinations
 
 
 class SudokuModel:
@@ -52,6 +53,20 @@ class SudokuModel:
                 self.logger.info(f"{self.pencil_marks[r][c]} mark in ({r + 1},{c + 1})")
         self.logger.info(f"---End of mark the numbers---")
 
+    def delete_pencil_marks(self, updates) -> None:
+        for row, col, num in updates:
+            for r in range(9):
+                if self.board_data[r][col] == 0:
+                    self.pencil_marks[r][col].discard(num)
+            for c in range(9):
+                if self.board_data[row][c] == 0:
+                    self.pencil_marks[row][c].discard(num)
+            b_row, b_col = (row // 3) * 3, (col // 3) * 3
+            for r, c in product(range(b_row,b_row + 3), range(b_col, b_col + 3)):
+                if self.board_data[r][c] == 0:
+                    self.pencil_marks[r][c].discard(num)
+
+
     def get_used_num(self, row, col):
         used_row_nums = {num for num in self.board_data[row][:] if num != 0}
         used_col_nums = {
@@ -79,7 +94,7 @@ class SudokuModel:
 
         return updates
 
-    def find_hidden_singles(self) -> list[tuple[int, int, int]]:
+    def fill_hidden_singles_in_blocks(self) -> list[tuple[int, int, int]]:
         update = []
         for b_row in range(3):
             for b_col in range(3):
@@ -101,6 +116,37 @@ class SudokuModel:
                         # self.logger.info(
                         #     f"put the {num} in ({target_r + 1},{target_c})"
                         # )
+        return update
+        
+
+    def fill_hidden_singles_in_rows(self) -> list[tuple[int, int, int]]:
+        update = []
+        for row in range(9):
+            for num in range(1, 10):
+                cell_with_num = [
+                    (row, col) for col in range(9)
+                    if num in self.pencil_marks[row][col]
+                ]
+                if len(cell_with_num) == 1:
+                    target_r, target_c = cell_with_num[0]
+                    self.board_data[target_r][target_c] = num
+                    self.pencil_marks[target_r][target_c].clear()
+                    update.append((target_r, target_c, num))
+        return update
+
+    def fill_hidden_singles_in_cols(self) -> list[tuple[int, int, int]]:
+        update = []
+        for col in range(9):
+            for num in range(1, 10):
+                cell_with_num = [
+                    (row, col) for row in range(9)
+                    if num in self.pencil_marks[row][col]
+                ]
+                if len(cell_with_num) == 1:
+                    target_r, target_c = cell_with_num[0]
+                    self.board_data[target_r][target_c] = num
+                    self.pencil_marks[target_r][target_c].clear()
+                    update.append((target_r, target_c, num))
         return update
     
     def apply_hypothesis(self) -> list[tuple[int, int, int]]:
@@ -144,34 +190,56 @@ class SudokuModel:
             if self.board_data[r][c] == 0 and self.pencil_marks[r][c] == set():
                 return False
         return True
+    
+    def eliminate_naked_pairs(self) -> bool:
+        for subset_size in range(2, 5):
+            for row in range(9):
+                cells_with_candidates = {}
+                for col in range(9):
+                    if self.board_data[row][col] == 0:
+                        cells_with_candidates[(row, col)] = self.pencil_marks[row][col]
+                if len(cells_with_candidates) < subset_size:
+                    continue
+
+                for target_cells in combinations(cells_with_candidates.keys(), subset_size):
+                    combined_candidates = set()
+                    for cell in target_cells:
+                        combined_candidates.update(cells_with_candidates[cell])
+
 
                             
 
     def solve(self):
         self.logger.info("start to solve the sodoku")
         all_updates = []
+        self.init_pencil_marks()
         while True:
-            self.init_pencil_marks()
-            if not self.is_solved():
-                return []
-
             updates = self.fill_naked_singles()
             if updates:
+                self.delete_pencil_marks(updates)
                 all_updates.extend(updates)
                 continue
 
-            updates = self.find_hidden_singles()
+            updates = self.fill_hidden_singles_in_blocks()
             if updates:
+                self.delete_pencil_marks(updates)
                 all_updates.extend(updates)
                 continue
 
+            updates = self.fill_hidden_singles_in_rows()
+            if updates:
+                self.delete_pencil_marks(updates)
+                all_updates.extend(updates)
+                continue
+
+            updates = self.fill_hidden_singles_in_cols()
+            if updates:
+                self.delete_pencil_marks(updates)
+                all_updates.extend(updates)
+                continue
             
 
             self.logger.info("Logic phase ended. No new updates")
             break
-        if any(0 in row for row in self.board_data):
-            updates = self.apply_hypothesis()
-            all_updates.extend(updates)
+        all_updates.extend(updates)
         return all_updates
-        # else:
-        #     return all_updates
