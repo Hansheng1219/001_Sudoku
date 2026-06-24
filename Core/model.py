@@ -3,9 +3,8 @@
 # 演算法解題：負責執行「回溯法 (Backtracking)」演算法，自動推算出正確的數獨解答。
 
 import logging
-from itertools import product
+from itertools import product, combinations
 import copy
-from itertools import combinations
 
 
 class SudokuModel:
