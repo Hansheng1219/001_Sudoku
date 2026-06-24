@@ -21,8 +21,6 @@ class SudokuCell(tk.Entry):
         vcmd = (self.register(self._validate_input), "%P")
         self.config(validatecommand=vcmd)
 
-
-
     def _validate_input(self, P):
         if P == "":
             return True
