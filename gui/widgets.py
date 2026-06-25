@@ -94,6 +94,8 @@ class SudokuBoard(tk.Frame):
                 # 使用 Tkinter Entry 內建的 delete 方法
                 # 0 代表從第一個字元開始，tk.END 代表到最後一個字元
                 self.cells[row][col].delete(0, tk.END)
+                self.cells[row][col].config(fg="black")
+        
 
     def set_board_data(self, data):
         """將二維陣列的資料填入介面中的格子中"""
