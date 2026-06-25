@@ -59,5 +59,5 @@ def test_board():
 if __name__ == "__main__":
     app = SudokuApp()
     app.mainloop()
-    #monster Lisa 1
-    #arrow
+    #optimize the code
+    #import openCV
