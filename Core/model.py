@@ -95,57 +95,54 @@ class SudokuModel:
 
     def fill_hidden_singles_in_blocks(self) -> list[tuple[int, int, int]]:
         update = []
-        for b_row in range(3):
-            for b_col in range(3):
-                start_r = b_row * 3
-                start_c = b_col * 3
-                for num in range(1, 10):
-                    cell_with_num = [
-                        (start_r + r, start_c + c)
-                        for r in range(3)
-                        for c in range(3)
-                        if num in self.pencil_marks[start_r + r][start_c + c]
-                    ]
-                    if len(cell_with_num) == 1:
-                        target_r, target_c = cell_with_num[0]
-                        self.board_data[target_r][target_c] = num
-                        self.pencil_marks[target_r][target_c].clear()
+        for b_row, b_col in product(range(3), range(3)):
+            start_r = b_row * 3
+            start_c = b_col * 3
+            for num in range(1, 10):
+                cell_with_num = [
+                    (start_r + r, start_c + c)
+                    for r in range(3)
+                    for c in range(3)
+                    if num in self.pencil_marks[start_r + r][start_c + c]
+                ]
+                if len(cell_with_num) == 1:
+                    target_r, target_c = cell_with_num[0]
+                    self.board_data[target_r][target_c] = num
+                    self.pencil_marks[target_r][target_c].clear()
 
-                        update.append((target_r, target_c, num))
-                        # self.logger.info(
-                        #     f"put the {num} in ({target_r + 1},{target_c})"
-                        # )
+                    update.append((target_r, target_c, num))
+                    # self.logger.info(
+                    #     f"put the {num} in ({target_r + 1},{target_c})"
+                    # )
         return update
         
 
     def fill_hidden_singles_in_rows(self) -> list[tuple[int, int, int]]:
         update = []
-        for row in range(9):
-            for num in range(1, 10):
-                cell_with_num = [
-                    (row, col) for col in range(9)
-                    if num in self.pencil_marks[row][col]
-                ]
-                if len(cell_with_num) == 1:
-                    target_r, target_c = cell_with_num[0]
-                    self.board_data[target_r][target_c] = num
-                    self.pencil_marks[target_r][target_c].clear()
-                    update.append((target_r, target_c, num))
+        for row, num in product(range(9), range(1, 10)):
+            cell_with_num = [
+                (row, col) for col in range(9)
+                if num in self.pencil_marks[row][col]
+            ]
+            if len(cell_with_num) == 1:
+                target_r, target_c = cell_with_num[0]
+                self.board_data[target_r][target_c] = num
+                self.pencil_marks[target_r][target_c].clear()
+                update.append((target_r, target_c, num))
         return update
 
     def fill_hidden_singles_in_cols(self) -> list[tuple[int, int, int]]:
         update = []
-        for col in range(9):
-            for num in range(1, 10):
-                cell_with_num = [
-                    (row, col) for row in range(9)
-                    if num in self.pencil_marks[row][col]
-                ]
-                if len(cell_with_num) == 1:
-                    target_r, target_c = cell_with_num[0]
-                    self.board_data[target_r][target_c] = num
-                    self.pencil_marks[target_r][target_c].clear()
-                    update.append((target_r, target_c, num))
+        for col, num in product(range(9), range(1, 10)):
+            cell_with_num = [
+                (row, col) for row in range(9)
+                if num in self.pencil_marks[row][col]
+            ]
+            if len(cell_with_num) == 1:
+                target_r, target_c = cell_with_num[0]
+                self.board_data[target_r][target_c] = num
+                self.pencil_marks[target_r][target_c].clear()
+                update.append((target_r, target_c, num))
         return update
     
     def apply_hypothesis(self) -> list[tuple[int, int, int]]:
@@ -188,25 +185,7 @@ class SudokuModel:
                 if not is_ok: return is_ok
             if self.board_data[r][c] == 0 and self.pencil_marks[r][c] == set():
                 return False
-        return True
-    
-    def eliminate_naked_pairs(self) -> bool:
-        for subset_size in range(2, 5):
-            for row in range(9):
-                cells_with_candidates = {}
-                for col in range(9):
-                    if self.board_data[row][col] == 0:
-                        cells_with_candidates[(row, col)] = self.pencil_marks[row][col]
-                if len(cells_with_candidates) < subset_size:
-                    continue
-
-                for target_cells in combinations(cells_with_candidates.keys(), subset_size):
-                    combined_candidates = set()
-                    for cell in target_cells:
-                        combined_candidates.update(cells_with_candidates[cell])
-
-
-                            
+        return True          
 
     def solve(self):
         self.logger.info("start to solve the sodoku")
