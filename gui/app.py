@@ -3,6 +3,7 @@
 
 import tkinter as tk
 from gui.widgets import SudokuBoard
+from itertools import product
 
 import json
 import os
@@ -12,9 +13,7 @@ import logging
 class SudokuApp(tk.Tk):
     SAVE_FILE = "last_board.json"
 
-    def __init__(
-        self,
-    ):
+    def __init__(self):
         super().__init__()
         self.logger = logging.getLogger("SudokuApp")
 
@@ -92,18 +91,17 @@ class SudokuApp(tk.Tk):
 
         self.logger.info("---Starting to validate the current board---")
         is_all_pass = True
-        for r in range(9):
-            for c in range(9):
-                val = current_data[r][c]
+        for r, c in product(range(9), range(9)):
+            val = current_data[r][c]
 
-                if val != 0:
-                    model.board_data[r][c] = 0
-                    is_ok = model.is_valid(r, c, val)
-                    model.board_data[r][c] = val
+            if val != 0:
+                model.board_data[r][c] = 0
+                is_ok = model.is_valid(r, c, val)
+                model.board_data[r][c] = val
 
-                    if not is_ok:
-                        self.logger.error(f"{val} in ({r}:{c}) is not ok")
-                        is_all_pass == False
+                if not is_ok:
+                    self.logger.error(f"{val} in ({r}:{c}) is not ok")
+                    is_all_pass == False
         if is_all_pass:
             self.logger.info(f"---all number are ok---")
         else:

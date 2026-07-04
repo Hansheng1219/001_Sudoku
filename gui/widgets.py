@@ -89,22 +89,20 @@ class SudokuBoard(tk.Frame):
         return data
 
     def clear_board(self):
-        for row in range(9):
-            for col in range(9):
-                # 使用 Tkinter Entry 內建的 delete 方法
-                # 0 代表從第一個字元開始，tk.END 代表到最後一個字元
-                self.cells[row][col].delete(0, tk.END)
-                self.cells[row][col].config(fg="black")
+        for row, col in product(range(9), range(9)):
+            # 使用 Tkinter Entry 內建的 delete 方法
+            # 0 代表從第一個字元開始，tk.END 代表到最後一個字元
+            self.cells[row][col].delete(0, tk.END)
+            self.cells[row][col].config(fg="black")
         
 
     def set_board_data(self, data):
         """將二維陣列的資料填入介面中的格子中"""
-        for r in range(9):
-            for c in range(9):
-                self.cells[r][c].delete(0, tk.END)
-                val = data[r][c]
-                if val != 0:
-                    self.cells[r][c].insert(0, str(val))
+        for r, c in product(range(9), range(9)):
+            self.cells[r][c].delete(0, tk.END)
+            val = data[r][c]
+            if val != 0:
+                self.cells[r][c].insert(0, str(val))
 
     def move_focus(self, row, col):
         new_r = max(0, min(8, row))
