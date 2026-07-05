@@ -1,17 +1,18 @@
 # 專門用來存放「主視窗 (SudokuApp)」。
 # 它的職責是把零件庫裡的盤面拿出來擺好，加上「解題」、「清空」等控制按鈕，並定義這些按鈕按下去會發生什麼事。
 
-import tkinter as tk
-from gui.widgets import SudokuBoard
-from itertools import product
-
 import json
-import os
 import logging
+from itertools import product
+from pathlib import Path
+import tkinter as tk
+
+from Core.model import SudokuModel
+from gui.widgets import SudokuBoard
 
 
 class SudokuApp(tk.Tk):
-    SAVE_FILE = "last_board.json"
+    SAVE_FILE = Path(__file__).resolve().parent.parent / "last_board.json"
 
     def __init__(self):
         super().__init__()
@@ -29,35 +30,45 @@ class SudokuApp(tk.Tk):
         self._create_controls()
         self.load_last_puzzle()
 
-    def load_last_puzzle(self):
-        """啟動嘗試從檔案讀取上次的題目"""
-        if os.path.exists(self.SAVE_FILE):
-            try:
-                with open(self.SAVE_FILE, "r") as f:
-                    data = json.load(f)
-                    self.board.set_board_data(data)
-                self.logger.info("success to load the last data")
-            except:
-                self.logger.error("fail to load the data")
+    def _is_valid_board_data(self, data) -> bool:
+        return (
+            isinstance(data, list)
+            and len(data) == 9
+            and all(isinstance(row, list) and len(row) == 9 for row in data)
+        )
 
-    def save_current_puzzle(self):
-        """將目前盤面資料存入檔案"""
+    def load_last_puzzle(self) -> None:
+        """啟動時嘗試從檔案讀取上次的題目。"""
+        if not self.SAVE_FILE.exists():
+            return
+
+        try:
+            with self.SAVE_FILE.open("r", encoding="utf-8") as handle:
+                data = json.load(handle)
+
+            if self._is_valid_board_data(data):
+                self.board.set_board_data(data)
+                self.logger.info("Loaded the last saved board")
+            else:
+                self.logger.warning("Saved board data format is invalid; skipped loading")
+        except (OSError, json.JSONDecodeError, TypeError, ValueError) as exc:
+            self.logger.exception("Failed to load saved board data: %s", exc)
+
+    def save_current_puzzle(self) -> None:
+        """將目前盤面資料存入檔案。"""
         data = self.board.get_board_data()
         try:
-            with open(self.SAVE_FILE, "w") as f:
-                json.dump(data, f)
-            self.logger.info("already saved the board data")
-        except Exception as e:
-            self.logger.error(f"fail to save: {e}")
+            with self.SAVE_FILE.open("w", encoding="utf-8") as handle:
+                json.dump(data, handle, indent=2)
+            self.logger.info("Saved current board data")
+        except OSError as exc:
+            self.logger.exception("Failed to save board data: %s", exc)
 
-    def _create_controls(self):
+    def _create_controls(self) -> None:
         # 封裝方法：專門用來產生下方的按鈕群組
-
-        # 建立一個 Frame 來把按鈕橫向排好
         control_frame = tk.Frame(self)
         control_frame.pack(pady=10)
 
-        # 解題按鈕
         self.btn_solve = tk.Button(
             control_frame,
             text="Solving",
@@ -67,7 +78,6 @@ class SudokuApp(tk.Tk):
         )
         self.btn_solve.grid(row=0, column=0, padx=10)
 
-        # 清空按鈕 (目前先放著當裝飾，之後再實作功能)
         self.btn_clear = tk.Button(
             control_frame,
             text="clear the borard",
@@ -76,51 +86,56 @@ class SudokuApp(tk.Tk):
         )
         self.btn_clear.grid(row=0, column=1, padx=10)
 
+    def _apply_updates(self, updates) -> None:
+        for row, col, num in updates:
+            target_cell = self.board.cells[row][col]
+            target_cell.config(fg="blue")
+            target_cell.delete(0, tk.END)
+            target_cell.insert(0, str(num))
+
     # --- 以下是按鈕觸發的事件 (Event Handlers) ---
 
-    def on_solve_click(self):
-        """點擊解題按鈕時要執行的動作"""
-        self.logger.info("User press, solving")
-        self.save_current_puzzle()  # <--- 點擊 Solving 時自動存檔
-        # 呼叫盤面交出資料
-
+    def on_solve_click(self) -> None:
+        """點擊解題按鈕時要執行的動作。"""
+        self.logger.info("User requested solving")
+        self.save_current_puzzle()
         current_data = self.board.get_board_data()
-        from Core.model import SudokuModel
 
         model = SudokuModel(current_data)
-
-        self.logger.info("---Starting to validate the current board---")
+        self.logger.info("Starting validation of the current board")
         is_all_pass = True
-        for r, c in product(range(9), range(9)):
-            val = current_data[r][c]
-
-            if val != 0:
-                model.board_data[r][c] = 0
-                is_ok = model.is_valid(r, c, val)
-                model.board_data[r][c] = val
-
+        invalid_positions = []
+        for row, col in product(range(9), range(9)):
+            value = current_data[row][col]
+            if value != 0:
+                model.board_data[row][col] = 0
+                is_ok = model.is_valid(row, col, value)
+                model.board_data[row][col] = value
                 if not is_ok:
-                    self.logger.error(f"{val} in ({r}:{c}) is not ok")
-                    is_all_pass == False
+                    invalid_positions.append((row, col, value))
+                    is_all_pass = False
+
         if is_all_pass:
-            self.logger.info(f"---all number are ok---")
+            self.logger.info("All numbers on the board are valid")
         else:
-            self.logger.warning(f"---test fail: the number on the board is not ok---")
+            self.logger.warning(
+                "Board validation found %s invalid placement(s)",
+                len(invalid_positions),
+            )
 
         updates = model.solve()
         if updates:
-            for r, c, num in updates:
-                target_cell = self.board.cells[r][c]
+            self.logger.info("Solver produced %s updates", len(updates))
+            self._apply_updates(updates)
+        else:
+            self.logger.warning("Solver produced no updates; the board may already be solved or unsolved")
 
-                target_cell.config(fg="blue")
-                target_cell.delete(0, "end")
-                target_cell.insert(0, str(num))
-
-    def on_clear_click(self):
-        """點擊清空按鈕時要執行的動作"""
-        self.logger.info("User clear the board")
+    def on_clear_click(self) -> None:
+        """點擊清空按鈕時要執行的動作。"""
+        self.logger.info("User cleared the board")
         self.board.clear_board()
-
-        if os.path.exists(self.SAVE_FILE):
-            os.remove(self.SAVE_FILE)
-            self.logger.info("already clear the data")
+        if self.SAVE_FILE.exists():
+            self.SAVE_FILE.unlink()
+            self.logger.info("Removed saved board data")
+        else:
+            self.logger.debug("No saved board data to remove")

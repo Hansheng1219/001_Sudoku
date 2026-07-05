@@ -1,63 +1,56 @@
-import tkinter as tk
-from gui.widgets import SudokuCell, SudokuBoard
+import logging
+from datetime import datetime
+from pathlib import Path
+
 from gui.app import SudokuApp
 
-import logging
 
-# 1. 設定日誌基礎配置 (只會執行一次)
-logging.basicConfig(
-    level=logging.DEBUG,
-    format="%(asctime)s | %(levelname)-8s | %(message)s",
-    datefmt="%H:%M:%S",
-    filename="sudoku_debug.log",
-    filemode="w",
-)
+def configure_logging() -> None:
+    """由主流程統一設定日誌，避免在不同模組中重複初始化。"""
+    base_dir = Path(__file__).resolve().parent
+    log_dir = base_dir / "logs"
+    log_dir.mkdir(exist_ok=True)
 
+    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    log_file = log_dir / f"sudoku_{timestamp}.log"
 
-def test_cell():
-    root = tk.Tk()
-    root.title("test mission 1")
-    root.geometry("200x200")
-
-    cell = SudokuCell(root, row=0, col=0)
-    cell.pack(padx=50)
-
-    print(f"Cell 座標設定成功 ({cell.row}, {cell.col})")
-
-    root.mainloop()
-
-
-def test_board():
-    root = tk.Tk()
-    root.title("test mission 2: Sudoku board")
-    root.geometry("450x450")
-
-    # 1. 實例化整個盤面，並放在視窗中間
-    board = SudokuBoard(root)
-    board.pack(pady=20)
-
-    # 2. 測試用的按鈕事件：點擊時呼叫 board.get_board_data()
-    def on_click_get_data():
-        current_data = board.get_board_data()
-        print("current data on the board")
-        for row in current_data:
-            print(row)
-        print("==============\n")
-
-    # 3. 建立一個按鈕來觸發抓取資料
-    btn = tk.Button(
-        root,
-        text="print the data on the board",
-        font=("Arial", 14),
-        command=on_click_get_data,
+    handler = logging.StreamHandler()
+    handler.setLevel(logging.INFO)
+    handler.setFormatter(
+        logging.Formatter(
+            "%(asctime)s | %(levelname)-8s | %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
     )
-    btn.pack(pady=10)
 
-    root.mainloop()
+    file_handler = logging.FileHandler(log_file, mode="w", encoding="utf-8")
+    file_handler.setLevel(logging.INFO)
+    file_handler.setFormatter(
+        logging.Formatter(
+            "%(asctime)s | %(levelname)-8s | %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+    )
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    root_logger.handlers.clear()
+    root_logger.addHandler(handler)
+    root_logger.addHandler(file_handler)
+
+    logging.getLogger(__name__).info("Logging initialized at %s", log_file)
+
+
+def main() -> int:
+    """應用程式進入點，統一負責初始化與啟動。"""
+    configure_logging()
+    logger = logging.getLogger(__name__)
+    logger.info("Starting Sudoku application")
+
+    app = SudokuApp()
+    app.mainloop()
+    return 0
 
 
 if __name__ == "__main__":
-    app = SudokuApp()
-    app.mainloop()
-    #optimize the code
-    #import openCV
+    raise SystemExit(main())
